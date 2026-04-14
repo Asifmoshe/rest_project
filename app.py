@@ -1,23 +1,14 @@
-from pathlib import Path
-
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
-
-import dal_users
-from router_users import router as users_router
-from router_model import router as model_router
-
 """
-Application entry point for the REST ML project.
+FastAPI application entry point for the REST ML project.
 
-This module creates the FastAPI app, initializes required resources on startup,
-registers API routers, and serves the HTML pages for the optional website UI.
+This file starts the API, creates the users table, creates the models folder,
+registers all routers, and serves the HTML pages.
 """
 
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -25,7 +16,16 @@ import dal_users
 from router_model import router as model_router
 from router_users import router as users_router
 
-app = FastAPI(title="running prediction")
+
+app = FastAPI(title="Running Time Prediction API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 templates = Jinja2Templates(directory="templates")
 MODELS_DIR = Path("models")
@@ -34,10 +34,7 @@ MODELS_DIR = Path("models")
 @app.on_event("startup")
 def startup() -> None:
     """
-    Initialize project resources when the application starts.
-
-    Creates the users table if it does not already exist and ensures that the
-    local directory used for storing trained models is available.
+    Prepare the database and models folder when the server starts.
     """
     dal_users.create_table_users()
     MODELS_DIR.mkdir(exist_ok=True)
@@ -48,39 +45,35 @@ app.include_router(model_router)
 
 
 @app.get("/")
-def home() -> RedirectResponse:
+def home():
     """
-    Redirect the root path to the user management page.
+    Redirect the home page to the users page.
+    """
+    return RedirectResponse("/users.html")
 
-    Returns:
-        RedirectResponse: Redirects the browser to the users HTML page.
+
+@app.get("/health")
+def health():
     """
-    return RedirectResponse("/users-page")
+    Return API health status.
+    """
+    return {"status": "online"}
 
 
 @app.get("/users-page")
+@app.get("/users.html")
 def users_page(request: Request):
     """
-    Render the user management HTML page.
-
-    Args:
-        request (Request): The current FastAPI request object.
-
-    Returns:
-        TemplateResponse: Rendered users.html page.
+    Render the user-management page.
     """
     return templates.TemplateResponse("users.html", {"request": request})
 
 
 @app.get("/model-page")
+@app.get("/model")
+@app.get("/model.html")
 def model_page(request: Request):
     """
-    Render the model training and prediction HTML page.
-
-    Args:
-        request (Request): The current FastAPI request object.
-
-    Returns:
-        TemplateResponse: Rendered model.html page.
+    Render the model training and prediction page.
     """
     return templates.TemplateResponse("model.html", {"request": request})

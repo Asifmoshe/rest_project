@@ -1,14 +1,9 @@
-import joblib
-import numpy as np
-from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import PolynomialFeatures
-
 """
-Machine learning helpers for polynomial regression.
+Machine-learning helpers for polynomial regression.
 
-This module trains a polynomial regression model on running data, saves it to a
-file, and loads it later for prediction.
+This module trains a polynomial regression model for running-time prediction,
+saves the trained model to disk, and loads saved models to make predictions.
+The API layer calls these functions from protected endpoints.
 """
 
 import joblib
@@ -18,21 +13,28 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures
 
 
-def train_and_save_model(training_hours, running_times, model_name, degree=3):
+def train_and_save_model(
+    training_hours,
+    running_times,
+    model_name: str,
+    degree: int = 3,
+) -> Pipeline:
     """
-    Train a polynomial regression model and save it to disk.
+    Train a polynomial regression model and save it to a file.
 
     Args:
-        training_hours: Feature values (X) used for model training.
-        running_times: Target values (Y) used for model training.
-        model_name (str): File path for saving the trained model.
-        degree (int, optional): Polynomial degree. Defaults to 3.
+        training_hours: Feature values used for training. The expected shape is
+            a two-dimensional structure such as ``[[2], [4], [6]]``.
+        running_times: Target values that match the training-hours samples.
+        model_name: File path where the trained model should be saved.
+        degree: Polynomial degree used by ``PolynomialFeatures``.
 
     Raises:
-        ValueError: If X and Y do not have the same number of samples.
+        ValueError: If ``training_hours`` and ``running_times`` do not contain
+            the same number of samples.
 
     Returns:
-        Pipeline: Trained scikit-learn pipeline.
+        Pipeline: The trained scikit-learn pipeline.
     """
     if len(training_hours) != len(running_times):
         raise ValueError("training_hours and running_times must have same length")
@@ -46,17 +48,16 @@ def train_and_save_model(training_hours, running_times, model_name, degree=3):
 
     model.fit(training_hours, running_times)
     joblib.dump(model, model_name)
-    print(f"Model saved to {model_name}")
     return model
 
 
-def predict_from_model(model_name, hours_value):
+def predict_from_model(model_name: str, hours_value: float) -> float:
     """
-    Load a saved model and predict the running time for new training hours.
+    Load a saved model and predict the running time for a new input value.
 
     Args:
-        model_name (str): Path to the saved model file.
-        hours_value: Training-hours value for prediction.
+        model_name: File path of the saved model file.
+        hours_value: Number of training hours used as the prediction input.
 
     Returns:
         float: Predicted running time.
@@ -64,13 +65,10 @@ def predict_from_model(model_name, hours_value):
     model = joblib.load(model_name)
     x_new = np.array([[hours_value]])
     prediction = model.predict(x_new)
-    return prediction[0]
+    return float(prediction[0])
 
 
 if __name__ == "__main__":
-    """
-    Example local run for training and prediction testing.
-    """
     training_hours = np.array([2, 3, 5, 7, 9, 12, 16, 20, 25, 30]).reshape(-1, 1)
     running_times = np.array([95, 85, 70, 65, 60, 55, 50, 53, 58, 70])
 

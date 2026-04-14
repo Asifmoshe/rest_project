@@ -1,12 +1,10 @@
-import sqlite3
-from passlib.context import CryptContext
-import hashlib
-
 """
 Data access layer for user management.
 
-This module handles all database operations related to users, including table
-creation, user CRUD actions, password hashing, and login validation.
+This module contains all direct SQLite operations for the users table,
+including table creation, CRUD actions, password hashing, and login
+validation. Router modules should call these functions instead of writing SQL
+queries directly.
 """
 
 import hashlib
@@ -15,16 +13,17 @@ from typing import Any
 
 from passlib.context import CryptContext
 
+
 DB_NAME = "users.db"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_connection() -> sqlite3.Connection:
     """
-    Create a SQLite connection configured to return rows as dictionaries.
+    Open a SQLite connection configured to return rows as dictionary-like rows.
 
     Returns:
-        sqlite3.Connection: Open connection to the users database.
+        sqlite3.Connection: Open connection to the project database.
     """
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
@@ -33,13 +32,13 @@ def get_connection() -> sqlite3.Connection:
 
 def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
     """
-    Convert a SQLite row object into a plain dictionary.
+    Convert a SQLite row object into a plain Python dictionary.
 
     Args:
-        row (sqlite3.Row | None): Row fetched from the database.
+        row: Row returned from SQLite, or ``None`` when no row was found.
 
     Returns:
-        dict[str, Any] | None: Converted dictionary or None if no row exists.
+        dict[str, Any] | None: Converted row dictionary, or ``None``.
     """
     if row is None:
         return None
@@ -48,16 +47,16 @@ def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
 
 def hash_password(password: str) -> str:
     """
-    Hash a password before storing it in the database.
+    Hash a plain-text password before storing it in the database.
 
-    The password is first hashed with SHA-256 and then hashed again using bcrypt
-    through Passlib.
+    The function first applies SHA-256 and then hashes the result with bcrypt
+    through Passlib. This prevents storing the original password as plain text.
 
     Args:
-        password (str): Plain-text password.
+        password: Plain-text password supplied by the user.
 
     Returns:
-        str: Secure hashed password.
+        str: Secure hash that can be safely stored in the database.
     """
     sha_password = hashlib.sha256(password.encode()).hexdigest()
     return pwd_context.hash(sha_password)
@@ -65,14 +64,14 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify a plain-text password against the stored hash.
+    Check whether a plain-text password matches the stored password hash.
 
     Args:
-        plain_password (str): Password provided by the user.
-        hashed_password (str): Stored password hash from the database.
+        plain_password: Password supplied during login.
+        hashed_password: Password hash stored in the database.
 
     Returns:
-        bool: True if the password matches, otherwise False.
+        bool: ``True`` if the password is valid, otherwise ``False``.
     """
     sha_password = hashlib.sha256(plain_password.encode()).hexdigest()
     return pwd_context.verify(sha_password, hashed_password)
@@ -81,6 +80,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_table_users() -> None:
     """
     Create the users table if it does not already exist.
+
+    The table stores an id, username, email, encrypted password, and creation
+    timestamp for each user.
     """
     query = """
     CREATE TABLE IF NOT EXISTS users (
@@ -98,6 +100,9 @@ def create_table_users() -> None:
 def drop_table_users() -> None:
     """
     Drop the users table if it exists.
+
+    This function is intended mainly for local testing or resetting the
+    project database.
     """
     with get_connection() as conn:
         conn.execute("DROP TABLE IF EXISTS users")
@@ -107,7 +112,8 @@ def recreate_table_users() -> None:
     """
     Recreate the users table from scratch.
 
-    Useful for testing or resetting the database.
+    Warning:
+        Existing user records will be deleted.
     """
     drop_table_users()
     create_table_users()
@@ -115,10 +121,10 @@ def recreate_table_users() -> None:
 
 def get_all_users() -> list[dict[str, Any]]:
     """
-    Fetch all users from the database.
+    Fetch all users without returning their password hashes.
 
     Returns:
-        list[dict[str, Any]]: List of user records ordered by id.
+        list[dict[str, Any]]: User records ordered by id.
     """
     query = """
     SELECT id, user_name, email, created_at
@@ -132,13 +138,13 @@ def get_all_users() -> list[dict[str, Any]]:
 
 def get_user_by_id(user_id: int) -> dict[str, Any] | None:
     """
-    Fetch a single user by database id.
+    Fetch a single user by database id without returning the password hash.
 
     Args:
-        user_id (int): User id.
+        user_id: User id to search for.
 
     Returns:
-        dict[str, Any] | None: User record or None if not found.
+        dict[str, Any] | None: User record if found, otherwise ``None``.
     """
     query = """
     SELECT id, user_name, email, created_at
@@ -154,11 +160,14 @@ def get_user_by_username(user_name: str) -> dict[str, Any] | None:
     """
     Fetch a single user by username.
 
+    This function returns the full database row, including the password hash,
+    because authentication needs the hash to validate login attempts.
+
     Args:
-        user_name (str): Username to search for.
+        user_name: Username to search for.
 
     Returns:
-        dict[str, Any] | None: Full user record or None if not found.
+        dict[str, Any] | None: Full user record if found, otherwise ``None``.
     """
     query = "SELECT * FROM users WHERE user_name = ?"
     with get_connection() as conn:
@@ -171,13 +180,13 @@ def insert_user(user_name: str, email: str, password: str) -> dict[str, Any] | N
     Insert a new user into the database.
 
     Args:
-        user_name (str): Desired username.
-        email (str): User email.
-        password (str): Plain-text password.
+        user_name: Desired username.
+        email: User email address.
+        password: Plain-text password that will be hashed before saving.
 
     Returns:
-        dict[str, Any] | None: Newly created user record, or None if username or
-        email already exists.
+        dict[str, Any] | None: Created user record, or ``None`` if the username
+        or email already exists.
     """
     query = """
     INSERT INTO users (user_name, email, password)
@@ -201,19 +210,18 @@ def update_user(
     password: str,
 ) -> dict[str, Any] | str | None:
     """
-    Update an existing user's details.
+    Update an existing user's username, email, and password.
 
     Args:
-        user_id (int): User id to update.
-        user_name (str): New username.
-        email (str): New email.
-        password (str): New plain-text password.
+        user_id: Id of the user to update.
+        user_name: New username.
+        email: New email address.
+        password: New plain-text password that will be hashed before saving.
 
     Returns:
-        dict[str, Any] | str | None:
-            - Updated user record on success
-            - "duplicate" if username or email already exists
-            - None if the user does not exist
+        dict[str, Any] | str | None: Updated user record on success,
+        ``"duplicate"`` if the username or email already exists, or ``None``
+        if the user id was not found.
     """
     query = """
     UPDATE users
@@ -229,10 +237,8 @@ def update_user(
                 (user_name, email, hashed_password, user_id),
             )
             affected_rows = cursor.rowcount
-
         if affected_rows == 0:
             return None
-
         return get_user_by_id(user_id)
     except sqlite3.IntegrityError:
         return "duplicate"
@@ -240,13 +246,14 @@ def update_user(
 
 def delete_user(user_id: int) -> dict[str, Any] | None:
     """
-    Delete a user from the database.
+    Delete a user from the database by id.
 
     Args:
-        user_id (int): User id to delete.
+        user_id: Id of the user to delete.
 
     Returns:
-        dict[str, Any] | None: Deleted user record, or None if not found.
+        dict[str, Any] | None: Deleted user record if it existed, otherwise
+        ``None``.
     """
     existing_user = get_user_by_id(user_id)
     if existing_user is None:
@@ -260,17 +267,17 @@ def delete_user(user_id: int) -> dict[str, Any] | None:
 
 def login_user(user_name: str, password: str) -> bool:
     """
-    Validate username and password for login.
+    Validate login credentials.
 
     Args:
-        user_name (str): Username supplied by the client.
-        password (str): Plain-text password supplied by the client.
+        user_name: Username supplied by the client.
+        password: Plain-text password supplied by the client.
 
     Returns:
-        bool: True if the login credentials are valid, otherwise False.
+        bool: ``True`` when the username exists and the password matches,
+        otherwise ``False``.
     """
     user = get_user_by_username(user_name)
     if user is None:
         return False
-
     return verify_password(password, user["password"])

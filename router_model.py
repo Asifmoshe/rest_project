@@ -1,15 +1,9 @@
-from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
-
-from auth import get_current_user
-from model import train_and_save_model, predict_from_model
-
 """
-API routes for model training and prediction.
+Protected API routes for model training and prediction.
 
-This router exposes protected endpoints that allow an authenticated user to
-train a personal model and request running-time predictions.
+The endpoints in this router require a valid JWT token. The authenticated
+username is taken from the token, so the client does not manually choose the
+model file name. Each user trains and predicts with a personal model file.
 """
 
 from pathlib import Path
@@ -20,56 +14,63 @@ from pydantic import BaseModel, Field
 from auth import get_current_user
 from model import predict_from_model, train_and_save_model
 
-router = APIRouter(tags=["Model"])
 
+router = APIRouter(tags=["Model"])
 MODELS_DIR = Path("models")
 MODELS_DIR.mkdir(exist_ok=True)
 
 
 class TrainRequest(BaseModel):
     """
-    Request body for model training.
+    Request body for training a polynomial regression model.
 
-    Attributes:
-        x (list[float]): Feature values used for training.
-        y (list[float]): Target values used for training.
-        degree (int): Polynomial degree for the model.
+    The frontend sends capital X and Y, while Swagger/manual testing may use
+    lowercase x and y. This class supports both formats.
     """
 
-    x: list[float] = Field(..., min_length=1, description="Feature values")
-    y: list[float] = Field(..., min_length=1, description="Target values")
+    X: list[float] | None = None
+    Y: list[float] | None = None
+    x: list[float] | None = None
+    y: list[float] | None = None
     degree: int = Field(default=3, ge=1, le=10)
 
+    def get_x_values(self) -> list[float]:
+        """
+        Return X values from either X or x.
+        """
+        return self.X if self.X is not None else self.x
 
-@router.post("/TRAIN")
-def train_model(data: TrainRequest, current_user: dict = Depends(get_current_user)):
+    def get_y_values(self) -> list[float]:
+        """
+        Return Y values from either Y or y.
+        """
+        return self.Y if self.Y is not None else self.y
+
+
+def train_model_logic(data: TrainRequest, current_user: dict):
     """
     Train and save a personal model for the authenticated user.
-
-    The username is taken from the JWT token, not from the request body. The
-    trained model is saved under the user's name.
-
-    Args:
-        data (TrainRequest): Training payload with X, Y, and degree.
-        current_user (dict): Authenticated user resolved from the JWT token.
-
-    Raises:
-        HTTPException: If X and Y lengths differ or if training fails.
-
-    Returns:
-        dict: Training result summary.
     """
-    if len(data.x) != len(data.y):
+    x_values = data.get_x_values()
+    y_values = data.get_y_values()
+
+    if x_values is None or y_values is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="x and y must have the same length",
+            detail="Missing X/Y values. Send X and Y arrays.",
+        )
+
+    if len(x_values) != len(y_values):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X and Y must have the same length",
         )
 
     user_name = current_user["user_name"]
     model_path = MODELS_DIR / f"{user_name}.pkl"
 
-    training_hours = [[value] for value in data.x]
-    running_times = data.y
+    training_hours = [[value] for value in x_values]
+    running_times = y_values
 
     try:
         train_and_save_model(
@@ -78,11 +79,6 @@ def train_model(data: TrainRequest, current_user: dict = Depends(get_current_use
             model_name=str(model_path),
             degree=data.degree,
         )
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -94,26 +90,13 @@ def train_model(data: TrainRequest, current_user: dict = Depends(get_current_use
         "user_name": user_name,
         "model_file": model_path.name,
         "degree": data.degree,
-        "samples": len(data.x),
+        "samples": len(x_values),
     }
 
 
-@router.get("/PREDICT/{hours}")
-def predict(hours: float, current_user: dict = Depends(get_current_user)):
+def predict_logic(hours: float, current_user: dict):
     """
-    Predict running time for the authenticated user's saved model.
-
-    The model file is located according to the username extracted from the JWT.
-
-    Args:
-        hours (float): Number of training hours for prediction.
-        current_user (dict): Authenticated user resolved from the JWT token.
-
-    Raises:
-        HTTPException: If the user's model file does not exist or prediction fails.
-
-    Returns:
-        dict: Prediction result including username, input hours, and predicted value.
+    Predict running time using the authenticated user's saved model.
     """
     user_name = current_user["user_name"]
     model_path = MODELS_DIR / f"{user_name}.pkl"
@@ -133,7 +116,53 @@ def predict(hours: float, current_user: dict = Depends(get_current_user)):
         ) from exc
 
     return {
+        "message": "Prediction completed successfully",
         "user_name": user_name,
         "hours": hours,
-        "predicted_running_time": float(prediction),
+        "prediction": prediction,
+        "predicted_running_time": prediction,
     }
+
+
+@router.post("/train")
+def train_model_lowercase(
+    data: TrainRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Lowercase train endpoint used by the HTML page.
+    """
+    return train_model_logic(data, current_user)
+
+
+@router.post("/TRAIN")
+def train_model_uppercase(
+    data: TrainRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Uppercase train endpoint required by the assignment.
+    """
+    return train_model_logic(data, current_user)
+
+
+@router.get("/predict/{hours}")
+def predict_lowercase(
+    hours: float,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Lowercase predict endpoint used by the HTML page.
+    """
+    return predict_logic(hours, current_user)
+
+
+@router.get("/PREDICT/{hours}")
+def predict_uppercase(
+    hours: float,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Uppercase predict endpoint required by the assignment.
+    """
+    return predict_logic(hours, current_user)
