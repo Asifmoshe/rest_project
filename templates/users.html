@@ -1,301 +1,729 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Users Page</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 30px;
-      background: #0f172a;
-      color: white;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Management — ML REST API</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --surface2: #f2f0ec;
+    --border: #e2dfd8;
+    --text: #1a1917;
+    --muted: #6b6860;
+    --accent: #2a6049;
+    --accent-light: #e8f2ee;
+    --accent-mid: #3d8a68;
+    --danger: #c0392b;
+    --danger-light: #fdf0ee;
+    --warn: #b45309;
+    --warn-light: #fef9ee;
+    --success: #166534;
+    --success-light: #f0fdf4;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
 
-    h1, h2 {
-      margin-top: 0;
-    }
+  /* Layout */
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 0;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .app-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .sidebar-logo .app-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .sidebar-nav { padding: 12px 10px; flex: 1; }
+  .nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 8px 10px 4px;
+  }
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-link:hover { background: var(--surface2); color: var(--text); }
+  .nav-link.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+  .nav-link svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .sidebar-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .sidebar-footer a { color: var(--accent); text-decoration: none; }
 
-    .box {
-      background: #1e293b;
-      padding: 20px;
-      border-radius: 16px;
-      margin-bottom: 20px;
-    }
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 15px; font-weight: 500; }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .badge-green { background: var(--success-light); color: var(--success); }
+  .badge-red { background: var(--danger-light); color: var(--danger); }
+  .badge-amber { background: var(--warn-light); color: var(--warn); }
 
-    input {
-      display: block;
-      width: 100%;
-      max-width: 400px;
-      margin: 8px 0 12px;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid #475569;
-      background: #0f172a;
-      color: white;
-    }
+  .content { padding: 28px 32px; flex: 1; overflow-y: auto; }
 
-    button {
-      padding: 10px 14px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      margin-right: 8px;
-      margin-top: 8px;
-    }
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .card-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .card-body { padding: 20px; }
 
-    .green { background: #22c55e; }
-    .blue { background: #38bdf8; }
-    .yellow { background: #fbbf24; }
-    .red { background: #f87171; }
-    .gray { background: #64748b; color: white; }
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
 
-    .message {
-      margin-top: 10px;
-      white-space: pre-wrap;
-      color: #cbd5e1;
-    }
+  /* Stats */
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-value { font-size: 26px; font-weight: 300; color: var(--text); margin-top: 4px; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-    }
+  /* Form */
+  .form-row { margin-bottom: 14px; }
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; letter-spacing: 0.02em; }
+  input, select {
+    width: 100%;
+    padding: 8px 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(42,96,73,0.08);
+  }
+  input::placeholder { color: #b5b2ab; }
 
-    th, td {
-      border: 1px solid #475569;
-      padding: 10px;
-      text-align: left;
-    }
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #224e3c; }
+  .btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-outline:hover { background: var(--surface2); }
+  .btn-danger { background: transparent; color: var(--danger); border-color: #e8c4bf; }
+  .btn-danger:hover { background: var(--danger-light); }
+  .btn-sm { padding: 5px 11px; font-size: 12px; }
+  .btn-full { width: 100%; justify-content: center; }
+  .btn svg { width: 13px; height: 13px; }
 
-    th {
-      background: #334155;
-    }
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  td { padding: 10px 12px; color: var(--text); }
+  td.mono { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
 
-    a {
-      color: #38bdf8;
-    }
-  </style>
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .toast-item {
+    background: var(--text);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 400;
+    max-width: 280px;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: toastIn 0.2s ease forwards, toastOut 0.2s ease 2.8s forwards;
+    pointer-events: none;
+  }
+  .toast-item.success { background: var(--accent); }
+  .toast-item.error { background: var(--danger); }
+  @keyframes toastIn { to { opacity: 1; transform: translateY(0); } }
+  @keyframes toastOut { to { opacity: 0; transform: translateY(4px); } }
+
+  /* Response box */
+  .response-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    min-height: 60px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin-top: 12px;
+  }
+  .response-box.success { border-color: #a7d7be; color: var(--success); background: var(--success-light); }
+  .response-box.error { border-color: #e8c4bf; color: var(--danger); background: var(--danger-light); }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* Pill tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface2); padding: 4px; border-radius: var(--radius-sm); }
+  .tab {
+    padding: 6px 14px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  /* Page sections */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 20px; font-weight: 400; color: var(--text); }
+  .page-header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+</style>
 </head>
 <body>
-  <h1>User Management</h1>
 
-  <p>
-    <a href="/users-page">Users Page</a> |
-    <a href="/model-page">Model Page</a>
-  </p>
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="app-name">ML REST API</div>
+      <div class="app-sub">Regression Predictor</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Navigation</div>
+      <a class="nav-link active" href="users.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="2.5"/><path d="M2.5 13.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>
+        Users
+      </a>
+      <a class="nav-link" href="model.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.5 3.5L8 10l-3 1.5.5-3.5L3 5.5 6.5 5z"/></svg>
+        Model & Predict
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <span>Base URL: </span><br>
+      <code style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent)">http://localhost:5000</code>
+    </div>
+  </aside>
 
-  <div class="box">
-    <h2>Create User</h2>
-    <input id="createUserName" placeholder="User name">
-    <input id="createEmail" placeholder="Email">
-    <input id="createPassword" type="password" placeholder="Password">
-    <button class="green" onclick="createUser()">Create User</button>
-    <div id="createMessage" class="message"></div>
-  </div>
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title">User Management</span>
+      <div class="topbar-actions">
+        <span id="api-status" class="badge badge-amber">● Checking...</span>
+      </div>
+    </div>
 
-  <div class="box">
-    <h2>Login</h2>
-    <input id="loginUserName" placeholder="User name">
-    <input id="loginPassword" type="password" placeholder="Password">
-    <button class="blue" onclick="login()">Login</button>
-    <button class="gray" onclick="logout()">Logout</button>
-    <div id="loginMessage" class="message"></div>
-  </div>
+    <div class="content">
+      <div class="page-header">
+        <h1>Users</h1>
+        <p>Create, view, update and delete users. Log in to receive a JWT token.</p>
+      </div>
 
-  <div class="box">
-    <h2>Find User by ID</h2>
-    <input id="findUserId" type="number" placeholder="User ID">
-    <button class="gray" onclick="getUserById()">Get User</button>
-    <div id="findMessage" class="message"></div>
-  </div>
+      <!-- Stats row -->
+      <div class="grid-3">
+        <div class="stat">
+          <div class="stat-label">Total Users</div>
+          <div class="stat-value" id="stat-count">—</div>
+          <div class="stat-sub">registered accounts</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Auth Status</div>
+          <div class="stat-value" style="font-size:18px;margin-top:8px;" id="stat-auth">Not logged in</div>
+          <div class="stat-sub" id="stat-user">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">JWT Token</div>
+          <div class="stat-value" style="font-size:11px;font-family:'DM Mono',monospace;word-break:break-all;margin-top:6px;max-height:60px;overflow:hidden;color:var(--muted)" id="stat-token">—</div>
+        </div>
+      </div>
 
-  <div class="box">
-    <h2>Update User</h2>
-    <input id="updateUserId" type="number" placeholder="User ID">
-    <input id="updateUserName" placeholder="New user name">
-    <input id="updateEmail" placeholder="New email">
-    <input id="updatePassword" type="password" placeholder="New password">
-    <button class="yellow" onclick="updateUser()">Update User</button>
-    <div id="updateMessage" class="message"></div>
-  </div>
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('login')">Login</button>
+        <button class="tab" onclick="switchTab('create')">Create User</button>
+        <button class="tab" onclick="switchTab('list')">View Users</button>
+        <button class="tab" onclick="switchTab('update')">Update</button>
+        <button class="tab" onclick="switchTab('delete')">Delete</button>
+      </div>
 
-  <div class="box">
-    <h2>Delete User</h2>
-    <input id="deleteUserId" type="number" placeholder="User ID">
-    <button class="red" onclick="deleteUser()">Delete User</button>
-    <div id="deleteMessage" class="message"></div>
-  </div>
+      <!-- LOGIN -->
+      <div class="section active" id="tab-login">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Sign In</div>
+                <div class="card-sub">Get a JWT token to use the ML endpoints</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-row"><label>Username</label><input id="login-user" placeholder="your_username" /></div>
+              <div class="form-row"><label>Password</label><input id="login-pass" type="password" placeholder="••••••••" /></div>
+              <button class="btn btn-primary btn-full" onclick="doLogin()">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3h3v10h-3M7 11l3-3-3-3M2 8h8"/></svg>
+                Sign In
+              </button>
+              <div class="response-box" id="login-resp">Awaiting request...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">How Authentication Works</div></div>
+            <div class="card-body" style="font-size:13px;color:var(--muted);line-height:1.8;">
+              <p style="margin-bottom:10px;">1. Log in with your credentials via <code style="font-family:'DM Mono',monospace;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px;">POST /auth/login</code></p>
+              <p style="margin-bottom:10px;">2. Receive a <strong style="color:var(--text);font-weight:500;">JWT token</strong> valid for your session.</p>
+              <p style="margin-bottom:10px;">3. Token is stored locally and sent automatically with all ML requests.</p>
+              <p>4. Use the <strong style="color:var(--text);font-weight:500;">Model & Predict</strong> page to train and run predictions.</p>
+              <div style="margin-top:16px;padding:10px 12px;background:var(--accent-light);border-radius:var(--radius-sm);border-left:2px solid var(--accent);">
+                <span style="font-size:12px;color:var(--accent);font-weight:500;">Passwords are stored hashed — never as plain text.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-  <div class="box">
-    <h2>All Users</h2>
-    <button class="gray" onclick="getAllUsers()">Refresh Users</button>
-    <div id="usersMessage" class="message"></div>
+      <!-- CREATE -->
+      <div class="section" id="tab-create">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">New User</div>
+                <div class="card-sub">POST /users</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-row"><label>Username</label><input id="new-user" placeholder="john_doe" /></div>
+              <div class="form-row"><label>Email</label><input id="new-email" type="email" placeholder="john@example.com" /></div>
+              <div class="form-row"><label>Password</label><input id="new-pass" type="password" placeholder="Min 6 characters" /></div>
+              <button class="btn btn-primary btn-full" onclick="doCreate()">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v6M5 8h6"/></svg>
+                Create User
+              </button>
+              <div class="response-box" id="create-resp">Awaiting request...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">User Schema</div></div>
+            <div class="card-body">
+              <table style="font-size:12px;width:100%;border-collapse:collapse;">
+                <thead><tr><th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">Field</th><th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">Type</th><th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)">Note</th></tr></thead>
+                <tbody>
+                  <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border)">id</td><td style="padding:7px 8px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;color:var(--muted)">integer</td><td style="padding:7px 8px;border-bottom:1px solid var(--border);color:var(--muted)">Auto-generated</td></tr>
+                  <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border)">user_name</td><td style="padding:7px 8px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;color:var(--muted)">string</td><td style="padding:7px 8px;border-bottom:1px solid var(--border);color:var(--muted)">Unique</td></tr>
+                  <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border)">email</td><td style="padding:7px 8px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;color:var(--muted)">string</td><td style="padding:7px 8px;border-bottom:1px solid var(--border);color:var(--muted)">Unique</td></tr>
+                  <tr><td style="padding:7px 8px">password</td><td style="padding:7px 8px;font-family:'DM Mono',monospace;color:var(--muted)">string</td><td style="padding:7px 8px;color:var(--muted)">Bcrypt hashed</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <table>
-      <thead>
+      <!-- LIST -->
+      <div class="section" id="tab-list">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">All Users</div>
+              <div class="card-sub">GET /users</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="search-id" placeholder="Filter by ID" style="width:120px;" />
+              <button class="btn btn-outline btn-sm" onclick="loadUsers()">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 11l3 3"/><circle cx="6.5" cy="6.5" r="4"/></svg>
+                Load
+              </button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody">
+                <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Click Load to fetch users</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPDATE -->
+      <div class="section" id="tab-update">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Update User</div>
+                <div class="card-sub">PUT /users/:id</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-row"><label>User ID</label><input id="upd-id" placeholder="1" type="number" /></div>
+              <div class="form-row"><label>New Username</label><input id="upd-user" placeholder="new_username" /></div>
+              <div class="form-row"><label>New Email</label><input id="upd-email" type="email" placeholder="new@email.com" /></div>
+              <div class="form-row"><label>New Password</label><input id="upd-pass" type="password" placeholder="Leave blank to keep" /></div>
+              <button class="btn btn-primary btn-full" onclick="doUpdate()">Update User</button>
+              <div class="response-box" id="update-resp">Awaiting request...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Delete User</div>
+                <div class="card-sub">DELETE /users/:id</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-row"><label>User ID to Delete</label><input id="del-id" placeholder="1" type="number" /></div>
+              <button class="btn btn-danger btn-full" style="margin-top:4px;" onclick="doDelete()">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8.5h6V4"/></svg>
+                Delete User
+              </button>
+              <div class="response-box" id="delete-resp">Awaiting request...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DELETE (same as update but separate tab) -->
+      <div class="section" id="tab-delete">
+        <div class="card" style="max-width:480px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Delete User</div>
+              <div class="card-sub">DELETE /users/:id</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-row"><label>User ID</label><input id="del2-id" placeholder="Enter numeric ID" type="number" /></div>
+            <div style="padding:10px 12px;background:var(--danger-light);border-radius:var(--radius-sm);border-left:2px solid #e8c4bf;margin-bottom:14px;">
+              <span style="font-size:12px;color:var(--danger);">This action cannot be undone.</span>
+            </div>
+            <button class="btn btn-danger btn-full" onclick="doDelete2()">Confirm Delete</button>
+            <div class="response-box" id="delete2-resp">Awaiting request...</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<div id="toast"></div>
+
+<script>
+  const BASE = 'http://localhost:5000';
+  let JWT = localStorage.getItem('jwt_token') || '';
+  let currentUser = localStorage.getItem('jwt_user') || '';
+
+  function updateAuthStat() {
+    const el = document.getElementById('stat-auth');
+    const uel = document.getElementById('stat-user');
+    const tel = document.getElementById('stat-token');
+    if (JWT) {
+      el.textContent = 'Logged in';
+      el.style.color = 'var(--success)';
+      uel.textContent = currentUser;
+      tel.textContent = JWT.substring(0, 60) + '...';
+    } else {
+      el.textContent = 'Not logged in';
+      el.style.color = 'var(--muted)';
+      uel.textContent = '—';
+      tel.textContent = '—';
+    }
+  }
+  updateAuthStat();
+
+  async function checkApi() {
+    try {
+      const r = await fetch(BASE + '/users');
+      document.getElementById('api-status').textContent = '● API Online';
+      document.getElementById('api-status').className = 'badge badge-green';
+    } catch(e) {
+      document.getElementById('api-status').textContent = '● API Offline';
+      document.getElementById('api-status').className = 'badge badge-red';
+    }
+  }
+  checkApi();
+
+  function toast(msg, type='') {
+    const d = document.createElement('div');
+    d.className = 'toast-item ' + type;
+    d.textContent = msg;
+    document.getElementById('toast').appendChild(d);
+    setTimeout(() => d.remove(), 3200);
+  }
+
+  function setResp(id, data, ok) {
+    const el = document.getElementById(id);
+    el.textContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+    el.className = 'response-box ' + (ok ? 'success' : 'error');
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  async function doLogin() {
+    const user = document.getElementById('login-user').value.trim();
+    const pass = document.getElementById('login-pass').value;
+    if (!user || !pass) return toast('Fill in all fields', 'error');
+    try {
+      const r = await fetch(BASE + '/auth/login', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_name: user, password: pass })
+      });
+      const d = await r.json();
+      if (r.ok && d.token) {
+        JWT = d.token; currentUser = user;
+        localStorage.setItem('jwt_token', JWT);
+        localStorage.setItem('jwt_user', user);
+        updateAuthStat();
+        setResp('login-resp', d, true);
+        toast('Logged in as ' + user, 'success');
+      } else {
+        setResp('login-resp', d, false);
+        toast('Login failed', 'error');
+      }
+    } catch(e) { setResp('login-resp', 'Cannot connect to API: ' + e.message, false); }
+  }
+
+  async function doCreate() {
+    const user = document.getElementById('new-user').value.trim();
+    const email = document.getElementById('new-email').value.trim();
+    const pass = document.getElementById('new-pass').value;
+    if (!user || !email || !pass) return toast('Fill in all fields', 'error');
+    try {
+      const r = await fetch(BASE + '/users', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_name: user, email, password: pass })
+      });
+      const d = await r.json();
+      setResp('create-resp', d, r.ok);
+      if (r.ok) { toast('User created', 'success'); loadStats(); }
+      else toast('Create failed', 'error');
+    } catch(e) { setResp('create-resp', 'Cannot connect to API: ' + e.message, false); }
+  }
+
+  async function loadStats() {
+    try {
+      const r = await fetch(BASE + '/users');
+      if (r.ok) {
+        const d = await r.json();
+        document.getElementById('stat-count').textContent = Array.isArray(d) ? d.length : '?';
+      }
+    } catch(e) {}
+  }
+  loadStats();
+
+  async function loadUsers() {
+    const idFilter = document.getElementById('search-id').value.trim();
+    const url = idFilter ? BASE + '/users/' + idFilter : BASE + '/users';
+    try {
+      const r = await fetch(url);
+      const d = await r.json();
+      const tbody = document.getElementById('users-tbody');
+      const rows = Array.isArray(d) ? d : [d];
+      tbody.innerHTML = rows.map(u => `
         <tr>
-          <th>ID</th>
-          <th>User name</th>
-          <th>Email</th>
-          <th>Password</th>
+          <td class="mono">${u.id || '—'}</td>
+          <td><strong style="font-weight:500;">${u.user_name || u.username || '—'}</strong></td>
+          <td style="color:var(--muted)">${u.email || '—'}</td>
+          <td>
+            <button class="btn btn-outline btn-sm" onclick="prefillUpdate(${u.id},'${u.user_name||u.username}','${u.email}')">Edit</button>
+          </td>
         </tr>
-      </thead>
-      <tbody id="usersTableBody">
-        <tr>
-          <td colspan="4">No data loaded yet.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <script>
-    const TOKEN_KEY = "rest_project_token";
-    const USER_KEY = "rest_project_user";
-
-    function showMessage(elementId, text) {
-      const el = document.getElementById(elementId);
-      if (el) el.textContent = text;
+      `).join('');
+      document.getElementById('stat-count').textContent = rows.length;
+    } catch(e) {
+      document.getElementById('users-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger);padding:16px;">Failed to load — ' + e.message + '</td></tr>';
     }
+  }
 
-    async function handleResponse(response) {
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data.detail || "Request failed");
-      }
-      return data;
-    }
+  function prefillUpdate(id, username, email) {
+    document.querySelectorAll('.tab')[3].click();
+    document.getElementById('upd-id').value = id;
+    document.getElementById('upd-user').value = username;
+    document.getElementById('upd-email').value = email;
+  }
 
-    function renderUsers(users) {
-      const tbody = document.getElementById("usersTableBody");
+  async function doUpdate() {
+    const id = document.getElementById('upd-id').value.trim();
+    if (!id) return toast('Enter a user ID', 'error');
+    const body = {};
+    const u = document.getElementById('upd-user').value.trim();
+    const e = document.getElementById('upd-email').value.trim();
+    const p = document.getElementById('upd-pass').value;
+    if (u) body.user_name = u;
+    if (e) body.email = e;
+    if (p) body.password = p;
+    try {
+      const r = await fetch(BASE + '/users/' + id, {
+        method: 'PUT', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+      const d = await r.json();
+      setResp('update-resp', d, r.ok);
+      if (r.ok) toast('User updated', 'success'); else toast('Update failed', 'error');
+    } catch(e) { setResp('update-resp', 'Cannot connect to API: ' + e.message, false); }
+  }
 
-      if (!Array.isArray(users) || users.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4">No users found.</td></tr>`;
-        return;
-      }
+  async function doDelete() {
+    const id = document.getElementById('del-id').value.trim();
+    if (!id) return toast('Enter a user ID', 'error');
+    try {
+      const r = await fetch(BASE + '/users/' + id, { method: 'DELETE' });
+      const d = await r.json();
+      setResp('delete-resp', d, r.ok);
+      if (r.ok) { toast('User deleted', 'success'); loadStats(); } else toast('Delete failed', 'error');
+    } catch(e) { setResp('delete-resp', 'Cannot connect to API: ' + e.message, false); }
+  }
 
-      tbody.innerHTML = users.map(user => `
-        <tr>
-          <td>${user.id ?? ""}</td>
-          <td>${user.user_name ?? ""}</td>
-          <td>${user.email ?? ""}</td>
-          <td>${user.password ?? ""}</td>
-        </tr>
-      `).join("");
-    }
-
-    async function createUser() {
-      try {
-        const payload = {
-          user_name: document.getElementById("createUserName").value.trim(),
-          email: document.getElementById("createEmail").value.trim(),
-          password: document.getElementById("createPassword").value
-        };
-
-        const response = await fetch("/users", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await handleResponse(response);
-        showMessage("createMessage", JSON.stringify(data, null, 2));
-        getAllUsers();
-      } catch (error) {
-        showMessage("createMessage", error.message);
-      }
-    }
-
-    async function login() {
-      try {
-        const payload = {
-          user_name: document.getElementById("loginUserName").value.trim(),
-          password: document.getElementById("loginPassword").value
-        };
-
-        const response = await fetch("/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await handleResponse(response);
-        localStorage.setItem(TOKEN_KEY, data.access_token);
-        localStorage.setItem(USER_KEY, payload.user_name);
-        showMessage("loginMessage", "Login successful");
-      } catch (error) {
-        showMessage("loginMessage", error.message);
-      }
-    }
-
-    function logout() {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
-      showMessage("loginMessage", "Logged out");
-    }
-
-    async function getAllUsers() {
-      try {
-        const response = await fetch("/users");
-        const data = await handleResponse(response);
-        renderUsers(data);
-        showMessage("usersMessage", "Users loaded successfully");
-      } catch (error) {
-        showMessage("usersMessage", error.message);
-      }
-    }
-
-    async function getUserById() {
-      try {
-        const userId = document.getElementById("findUserId").value.trim();
-        const response = await fetch(`/users/${userId}`);
-        const data = await handleResponse(response);
-        showMessage("findMessage", JSON.stringify(data, null, 2));
-      } catch (error) {
-        showMessage("findMessage", error.message);
-      }
-    }
-
-    async function updateUser() {
-      try {
-        const userId = document.getElementById("updateUserId").value.trim();
-        const payload = {
-          user_name: document.getElementById("updateUserName").value.trim(),
-          email: document.getElementById("updateEmail").value.trim(),
-          password: document.getElementById("updatePassword").value
-        };
-
-        const response = await fetch(`/users/${userId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await handleResponse(response);
-        showMessage("updateMessage", JSON.stringify(data, null, 2));
-        getAllUsers();
-      } catch (error) {
-        showMessage("updateMessage", error.message);
-      }
-    }
-
-    async function deleteUser() {
-      try {
-        const userId = document.getElementById("deleteUserId").value.trim();
-        const response = await fetch(`/users/${userId}`, {
-          method: "DELETE"
-        });
-
-        const data = await handleResponse(response);
-        showMessage("deleteMessage", JSON.stringify(data, null, 2));
-        getAllUsers();
-      } catch (error) {
-        showMessage("deleteMessage", error.message);
-      }
-    }
-
-    getAllUsers();
-  </script>
+  async function doDelete2() {
+    const id = document.getElementById('del2-id').value.trim();
+    if (!id) return toast('Enter a user ID', 'error');
+    try {
+      const r = await fetch(BASE + '/users/' + id, { method: 'DELETE' });
+      const d = await r.json();
+      setResp('delete2-resp', d, r.ok);
+      if (r.ok) { toast('User deleted', 'success'); loadStats(); } else toast('Delete failed', 'error');
+    } catch(e) { setResp('delete2-resp', 'Cannot connect: ' + e.message, false); }
+  }
+</script>
 </body>
 </html>
