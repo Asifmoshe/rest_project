@@ -1,74 +1,301 @@
-<script>
-async function getAllUsers() {
-    clearMessage("usersMessage");
-    try {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Users Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 30px;
+      background: #0f172a;
+      color: white;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+    }
+
+    .box {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      max-width: 400px;
+      margin: 8px 0 12px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: white;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-top: 8px;
+    }
+
+    .green { background: #22c55e; }
+    .blue { background: #38bdf8; }
+    .yellow { background: #fbbf24; }
+    .red { background: #f87171; }
+    .gray { background: #64748b; color: white; }
+
+    .message {
+      margin-top: 10px;
+      white-space: pre-wrap;
+      color: #cbd5e1;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th, td {
+      border: 1px solid #475569;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background: #334155;
+    }
+
+    a {
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <h1>User Management</h1>
+
+  <p>
+    <a href="/users-page">Users Page</a> |
+    <a href="/model-page">Model Page</a>
+  </p>
+
+  <div class="box">
+    <h2>Create User</h2>
+    <input id="createUserName" placeholder="User name">
+    <input id="createEmail" placeholder="Email">
+    <input id="createPassword" type="password" placeholder="Password">
+    <button class="green" onclick="createUser()">Create User</button>
+    <div id="createMessage" class="message"></div>
+  </div>
+
+  <div class="box">
+    <h2>Login</h2>
+    <input id="loginUserName" placeholder="User name">
+    <input id="loginPassword" type="password" placeholder="Password">
+    <button class="blue" onclick="login()">Login</button>
+    <button class="gray" onclick="logout()">Logout</button>
+    <div id="loginMessage" class="message"></div>
+  </div>
+
+  <div class="box">
+    <h2>Find User by ID</h2>
+    <input id="findUserId" type="number" placeholder="User ID">
+    <button class="gray" onclick="getUserById()">Get User</button>
+    <div id="findMessage" class="message"></div>
+  </div>
+
+  <div class="box">
+    <h2>Update User</h2>
+    <input id="updateUserId" type="number" placeholder="User ID">
+    <input id="updateUserName" placeholder="New user name">
+    <input id="updateEmail" placeholder="New email">
+    <input id="updatePassword" type="password" placeholder="New password">
+    <button class="yellow" onclick="updateUser()">Update User</button>
+    <div id="updateMessage" class="message"></div>
+  </div>
+
+  <div class="box">
+    <h2>Delete User</h2>
+    <input id="deleteUserId" type="number" placeholder="User ID">
+    <button class="red" onclick="deleteUser()">Delete User</button>
+    <div id="deleteMessage" class="message"></div>
+  </div>
+
+  <div class="box">
+    <h2>All Users</h2>
+    <button class="gray" onclick="getAllUsers()">Refresh Users</button>
+    <div id="usersMessage" class="message"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>User name</th>
+          <th>Email</th>
+          <th>Password</th>
+        </tr>
+      </thead>
+      <tbody id="usersTableBody">
+        <tr>
+          <td colspan="4">No data loaded yet.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const TOKEN_KEY = "rest_project_token";
+    const USER_KEY = "rest_project_user";
+
+    function showMessage(elementId, text) {
+      const el = document.getElementById(elementId);
+      if (el) el.textContent = text;
+    }
+
+    async function handleResponse(response) {
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.detail || "Request failed");
+      }
+      return data;
+    }
+
+    function renderUsers(users) {
+      const tbody = document.getElementById("usersTableBody");
+
+      if (!Array.isArray(users) || users.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4">No users found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = users.map(user => `
+        <tr>
+          <td>${user.id ?? ""}</td>
+          <td>${user.user_name ?? ""}</td>
+          <td>${user.email ?? ""}</td>
+          <td>${user.password ?? ""}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function createUser() {
+      try {
+        const payload = {
+          user_name: document.getElementById("createUserName").value.trim(),
+          email: document.getElementById("createEmail").value.trim(),
+          password: document.getElementById("createPassword").value
+        };
+
+        const response = await fetch("/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await handleResponse(response);
+        showMessage("createMessage", JSON.stringify(data, null, 2));
+        getAllUsers();
+      } catch (error) {
+        showMessage("createMessage", error.message);
+      }
+    }
+
+    async function login() {
+      try {
+        const payload = {
+          user_name: document.getElementById("loginUserName").value.trim(),
+          password: document.getElementById("loginPassword").value
+        };
+
+        const response = await fetch("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await handleResponse(response);
+        localStorage.setItem(TOKEN_KEY, data.access_token);
+        localStorage.setItem(USER_KEY, payload.user_name);
+        showMessage("loginMessage", "Login successful");
+      } catch (error) {
+        showMessage("loginMessage", error.message);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      showMessage("loginMessage", "Logged out");
+    }
+
+    async function getAllUsers() {
+      try {
         const response = await fetch("/users");
         const data = await handleResponse(response);
         renderUsers(data);
-        showMessage("usersMessage", "info", "Users loaded successfully.");
-    } catch (error) {
-        showMessage("usersMessage", "error", error.message);
+        showMessage("usersMessage", "Users loaded successfully");
+      } catch (error) {
+        showMessage("usersMessage", error.message);
+      }
     }
-}
 
-async function getUserById() {
-    clearMessage("findMessage");
-    try {
+    async function getUserById() {
+      try {
         const userId = document.getElementById("findUserId").value.trim();
-        if (!userId) throw new Error("Please enter a user ID.");
-
         const response = await fetch(`/users/${userId}`);
         const data = await handleResponse(response);
-        showMessage("findMessage", "info", JSON.stringify(data, null, 2));
-    } catch (error) {
-        showMessage("findMessage", "error", error.message);
+        showMessage("findMessage", JSON.stringify(data, null, 2));
+      } catch (error) {
+        showMessage("findMessage", error.message);
+      }
     }
-}
 
-async function updateUser() {
-    clearMessage("updateMessage");
-    try {
+    async function updateUser() {
+      try {
         const userId = document.getElementById("updateUserId").value.trim();
-        if (!userId) throw new Error("Please enter a user ID.");
-
         const payload = {
-            user_name: document.getElementById("updateUserName").value.trim(),
-            email: document.getElementById("updateEmail").value.trim(),
-            password: document.getElementById("updatePassword").value
+          user_name: document.getElementById("updateUserName").value.trim(),
+          email: document.getElementById("updateEmail").value.trim(),
+          password: document.getElementById("updatePassword").value
         };
 
         const response = await fetch(`/users/${userId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
         });
 
         const data = await handleResponse(response);
-        showMessage("updateMessage", "success", `User updated successfully:\n${JSON.stringify(data, null, 2)}`);
+        showMessage("updateMessage", JSON.stringify(data, null, 2));
         getAllUsers();
-    } catch (error) {
-        showMessage("updateMessage", "error", error.message);
+      } catch (error) {
+        showMessage("updateMessage", error.message);
+      }
     }
-}
 
-async function deleteUser() {
-    clearMessage("deleteMessage");
-    try {
+    async function deleteUser() {
+      try {
         const userId = document.getElementById("deleteUserId").value.trim();
-        if (!userId) throw new Error("Please enter a user ID.");
-
         const response = await fetch(`/users/${userId}`, {
-            method: "DELETE"
+          method: "DELETE"
         });
 
         const data = await handleResponse(response);
-        showMessage("deleteMessage", "success", JSON.stringify(data, null, 2));
+        showMessage("deleteMessage", JSON.stringify(data, null, 2));
         getAllUsers();
-    } catch (error) {
-        showMessage("deleteMessage", "error", error.message);
+      } catch (error) {
+        showMessage("deleteMessage", error.message);
+      }
     }
-}
 
-updateSessionUI();
-getAllUsers();
-</script>
+    getAllUsers();
+  </script>
+</body>
+</html>

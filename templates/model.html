@@ -2,105 +2,111 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>REST Project - Train & Predict</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Model Training & Prediction</title>
     <style>
         :root {
-            --bg: #020617;
-            --surface: rgba(15, 23, 42, 0.74);
-            --text: #e5eefb;
-            --muted: #93a4bc;
-            --primary: #8b5cf6;
-            --primary-2: #38bdf8;
+            --bg: #0f172a;
+            --bg-2: #111827;
+            --card: rgba(30, 41, 59, 0.9);
+            --card-2: rgba(15, 23, 42, 0.9);
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --border: rgba(148, 163, 184, 0.25);
+            --primary: #38bdf8;
             --success: #22c55e;
-            --danger: #fb7185;
-            --border: rgba(255,255,255,0.12);
-            --shadow: 0 14px 32px rgba(0,0,0,0.32);
-            --radius: 24px;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+            --radius: 22px;
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
-            min-height: 100vh;
             font-family: Arial, sans-serif;
             color: var(--text);
             background:
-                radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.22), transparent 26%),
-                radial-gradient(circle at 85% 10%, rgba(56, 189, 248, 0.18), transparent 24%),
-                radial-gradient(circle at 75% 80%, rgba(34, 197, 94, 0.12), transparent 20%),
-                linear-gradient(145deg, #020617, #0f172a 45%, #111827);
+                radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 30%),
+                radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 24%),
+                linear-gradient(135deg, var(--bg), var(--bg-2));
+            min-height: 100vh;
         }
 
         .container {
-            width: min(1180px, 92vw);
+            width: min(1150px, 92vw);
             margin: 0 auto;
-            padding: 32px 0 60px;
+            padding: 32px 0 48px;
         }
 
         .hero {
             display: flex;
             justify-content: space-between;
-            gap: 16px;
             align-items: center;
-            margin-bottom: 26px;
+            gap: 20px;
             padding: 28px;
-            border-radius: 30px;
+            margin-bottom: 22px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
             border: 1px solid var(--border);
-            background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+            border-radius: 28px;
             box-shadow: var(--shadow);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(10px);
         }
 
-        h1 {
-            margin: 0 0 10px;
+        .hero h1 {
+            margin: 0 0 8px;
             font-size: clamp(2rem, 4vw, 3rem);
         }
 
         .hero p {
             margin: 0;
             color: var(--muted);
-            max-width: 740px;
-            line-height: 1.65;
+            line-height: 1.6;
+            max-width: 760px;
         }
 
         .nav {
             display: flex;
-            gap: 12px;
             flex-wrap: wrap;
+            gap: 10px;
         }
 
         .nav a {
             text-decoration: none;
             color: white;
-            padding: 12px 18px;
+            padding: 11px 16px;
             border-radius: 999px;
-            border: 1px solid var(--border);
             background: rgba(255,255,255,0.08);
-            transition: 0.2s ease;
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease, background 0.2s ease;
         }
 
-        .nav a:hover { transform: translateY(-2px); }
+        .nav a:hover {
+            transform: translateY(-2px);
+            background: rgba(255,255,255,0.12);
+        }
 
-        .badge-row {
+        .status-row {
             display: flex;
-            gap: 12px;
             flex-wrap: wrap;
+            gap: 12px;
             margin-bottom: 20px;
         }
 
-        .badge {
+        .pill {
             padding: 10px 14px;
             border-radius: 999px;
-            border: 1px solid var(--border);
             background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
             color: var(--muted);
         }
 
         .layout {
             display: grid;
-            grid-template-columns: 0.95fr 1.05fr;
+            grid-template-columns: 1fr 1.15fr;
             gap: 20px;
         }
 
@@ -110,13 +116,11 @@
         }
 
         .card {
-            border: 1px solid var(--border);
-            background: var(--surface);
-            border-radius: var(--radius);
             padding: 22px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             box-shadow: var(--shadow);
-            backdrop-filter: blur(12px);
-            animation: floatIn 0.45s ease;
         }
 
         .card h2 {
@@ -130,37 +134,37 @@
             line-height: 1.55;
         }
 
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
         label {
             display: block;
-            margin-bottom: 8px;
+            margin: 0 0 8px;
             color: #cbd5e1;
         }
 
         input, textarea {
             width: 100%;
-            padding: 14px 16px;
+            padding: 14px 15px;
             border-radius: 16px;
             border: 1px solid var(--border);
-            background: rgba(255,255,255,0.06);
+            background: var(--card-2);
             color: var(--text);
             outline: none;
-            transition: 0.2s ease;
+            transition: border-color 0.2s ease, transform 0.2s ease;
         }
 
         input:focus, textarea:focus {
-            border-color: var(--primary-2);
+            border-color: var(--primary);
             transform: translateY(-1px);
         }
 
         textarea {
-            min-height: 116px;
+            min-height: 110px;
             resize: vertical;
-        }
-
-        .row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
         }
 
         .actions {
@@ -172,60 +176,78 @@
 
         button {
             border: 0;
-            cursor: pointer;
-            border-radius: 16px;
+            border-radius: 15px;
             padding: 12px 16px;
             font-weight: 700;
+            cursor: pointer;
             transition: transform 0.2s ease, opacity 0.2s ease;
         }
 
-        button:hover { transform: translateY(-2px); }
+        button:hover {
+            transform: translateY(-2px);
+        }
 
-        .primary { background: linear-gradient(135deg, var(--primary), var(--primary-2)); color: white; }
+        .primary { background: var(--primary); color: #082f49; }
         .success { background: var(--success); color: #052e16; }
-        .soft { background: rgba(255,255,255,0.10); color: var(--text); border: 1px solid var(--border); }
-        .danger { background: var(--danger); color: #4c0519; }
+        .warning { background: var(--warning); color: #422006; }
+        .danger { background: var(--danger); color: #450a0a; }
+        .soft {
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
 
         .message {
-            margin-top: 16px;
-            border-radius: 18px;
-            padding: 14px 16px;
-            white-space: pre-wrap;
-            border: 1px solid transparent;
             display: none;
-            line-height: 1.55;
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            border: 1px solid transparent;
         }
 
         .message.show { display: block; }
-        .message.success { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.3); }
-        .message.error { background: rgba(251,113,133,0.12); border-color: rgba(251,113,133,0.3); }
-        .message.info { background: rgba(56,189,248,0.12); border-color: rgba(56,189,248,0.3); }
+        .message.success {
+            background: rgba(34,197,94,0.12);
+            border-color: rgba(34,197,94,0.3);
+        }
+        .message.error {
+            background: rgba(248,113,113,0.12);
+            border-color: rgba(248,113,113,0.3);
+        }
+        .message.info {
+            background: rgba(56,189,248,0.12);
+            border-color: rgba(56,189,248,0.3);
+        }
 
         .result-box {
             margin-top: 16px;
             padding: 18px;
-            border-radius: 20px;
+            border-radius: 18px;
             border: 1px solid var(--border);
-            background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.04));
+            background: rgba(255,255,255,0.04);
         }
 
-        .result-box h3 {
-            margin: 0 0 8px;
-            font-size: 1rem;
+        .result-title {
             color: #cbd5e1;
+            margin-bottom: 8px;
         }
 
-        .big-number {
+        .result-number {
             font-size: clamp(2rem, 4vw, 3rem);
             font-weight: 800;
-            letter-spacing: -0.02em;
         }
 
-        .helper-list {
-            margin: 0;
-            padding-left: 20px;
+        .helper {
             color: var(--muted);
-            line-height: 1.8;
+            line-height: 1.7;
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .hidden {
+            display: none;
         }
 
         code {
@@ -234,15 +256,13 @@
             border-radius: 10px;
         }
 
-        @keyframes floatIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @media (max-width: 940px) {
+        @media (max-width: 920px) {
             .layout { grid-template-columns: 1fr; }
             .row { grid-template-columns: 1fr; }
-            .hero { flex-direction: column; align-items: flex-start; }
+            .hero {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
@@ -252,7 +272,8 @@
         <div>
             <h1>Model Training & Prediction</h1>
             <p>
-                First log in with a valid user, then train your model and predict running time based on training hours.
+                First log in with your user, then train a model using X, Y and degree,
+                and finally predict running time according to training hours.
             </p>
         </div>
         <div class="nav">
@@ -261,16 +282,21 @@
         </div>
     </section>
 
-    <div class="badge-row">
-        <div class="badge">JWT token saved: <span id="tokenState">No</span></div>
-        <div class="badge">Logged in user: <span id="currentUserLabel">None</span></div>
+    <div class="status-row">
+        <div class="pill">JWT saved: <span id="tokenState">No</span></div>
+        <div class="pill">Current user: <span id="currentUserLabel">Not logged in</span></div>
+        <div class="pill">Training panel: <span id="panelState">Locked</span></div>
     </div>
 
     <section class="layout">
         <div class="stack">
             <article class="card">
-                <h2>1) Login First</h2>
-                <p class="sub">The train and predict endpoints are protected, so you must authenticate first.</p>
+                <h2>1) Login</h2>
+                <p class="sub">
+                    You must log in first. The JWT token is saved in the browser and used for
+                    <code>/TRAIN</code> and <code>/PREDICT/{hours}</code>.
+                </p>
+
                 <div class="row">
                     <div>
                         <label for="loginUserName">User name</label>
@@ -281,61 +307,80 @@
                         <input id="loginPassword" type="password" placeholder="••••••" />
                     </div>
                 </div>
+
                 <div class="actions">
                     <button class="primary" onclick="login()">Login</button>
                     <button class="soft" onclick="loadSavedSession()">Use Saved Session</button>
                     <button class="danger" onclick="logout()">Logout</button>
                 </div>
+
                 <div id="loginMessage" class="message"></div>
             </article>
 
             <article class="card">
-                <h2>Tips for Input</h2>
-                <p class="sub">The UI sends JSON to your FastAPI endpoints.</p>
-                <ul class="helper-list">
-                    <li>Enter numbers separated by commas, for example: <code>2, 3, 5, 7, 9</code></li>
-                    <li>X and Y must have the same length</li>
+                <h2>Input Tips</h2>
+                <p class="sub">Use comma-separated values for training data.</p>
+                <ul class="helper">
+                    <li>X example: <code>2, 3, 5, 7, 9</code></li>
+                    <li>Y example: <code>95, 84, 72, 66, 60</code></li>
+                    <li>X and Y must have the same number of values</li>
                     <li>Degree defaults to <code>3</code></li>
-                    <li>Prediction uses the logged-in user's saved model file</li>
+                    <li>Prediction loads the model of the logged-in user</li>
                 </ul>
             </article>
         </div>
 
         <div class="stack">
-            <article class="card">
+            <article class="card hidden" id="trainPredictCard">
                 <h2>2) Train Model</h2>
-                <p class="sub">This sends a <code>POST /TRAIN</code> request with X, Y and degree.</p>
+                <p class="sub">
+                    Send training data to <code>POST /TRAIN</code>.
+                </p>
+
                 <div>
                     <label for="xValues">X values</label>
-                    <textarea id="xValues" placeholder="2, 3, 5, 7, 9, 12, 16, 20, 25, 30"></textarea>
+                    <textarea id="xValues" placeholder="2, 3, 5, 7, 9, 12, 16, 20"></textarea>
                 </div>
+
                 <div style="margin-top: 12px;">
                     <label for="yValues">Y values</label>
-                    <textarea id="yValues" placeholder="95, 85, 70, 65, 60, 55, 50, 53, 58, 70"></textarea>
+                    <textarea id="yValues" placeholder="95, 85, 72, 66, 60, 56, 54, 57"></textarea>
                 </div>
+
                 <div style="margin-top: 12px;">
                     <label for="degree">Polynomial degree</label>
                     <input id="degree" type="number" min="1" max="10" value="3" />
                 </div>
+
                 <div class="actions">
                     <button class="success" onclick="trainModel()">Train Model</button>
                 </div>
+
                 <div id="trainMessage" class="message"></div>
             </article>
 
-            <article class="card">
+            <article class="card hidden" id="predictCard">
                 <h2>3) Predict Running Time</h2>
-                <p class="sub">This sends a <code>GET /PREDICT/{hours}</code> request using the saved model of the logged-in user.</p>
+                <p class="sub">
+                    Enter the number of training hours and send a request to
+                    <code>GET /PREDICT/{hours}</code>.
+                </p>
+
                 <label for="hours">Training hours</label>
                 <input id="hours" type="number" step="any" placeholder="15" />
+
                 <div class="actions">
-                    <button class="primary" onclick="predict()">Predict</button>
+                    <button class="warning" onclick="predict()">Predict</button>
                 </div>
+
                 <div id="predictMessage" class="message"></div>
+
                 <div class="result-box">
-                    <h3>Prediction result</h3>
-                    <div class="big-number" id="predictionValue">--</div>
-                    <div style="color: var(--muted); margin-top: 8px;" id="predictionDetails">No prediction yet.</div>
+                    <div class="result-title">Prediction result</div>
+                    <div class="result-number" id="predictionValue">--</div>
+                    <div id="predictionDetails" style="color: var(--muted); margin-top: 8px;">
+                        No prediction yet.
+                    </div>
                 </div>
             </article>
         </div>
@@ -348,45 +393,34 @@
 
     function showMessage(elementId, type, text) {
         const el = document.getElementById(elementId);
+        if (!el) return;
         el.className = `message show ${type}`;
         el.textContent = text;
     }
 
     function clearMessage(elementId) {
         const el = document.getElementById(elementId);
+        if (!el) return;
         el.className = "message";
         el.textContent = "";
     }
 
-    function updateSessionUI() {
-        const token = localStorage.getItem(TOKEN_KEY);
-        const user = localStorage.getItem(USER_KEY);
-        document.getElementById("tokenState").textContent = token ? "Yes" : "No";
-        document.getElementById("currentUserLabel").textContent = user || "None";
-    }
-
-    function getAuthHeaders() {
-        const token = localStorage.getItem(TOKEN_KEY);
-        if (!token) {
-            throw new Error("No JWT token found. Please login first.");
-        }
-        return {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-        };
-    }
-
     function parseNumbers(text) {
-        const parts = text
+        const values = text
             .split(",")
-            .map(value => value.trim())
-            .filter(Boolean)
+            .map(v => v.trim())
+            .filter(v => v !== "")
             .map(Number);
 
-        if (parts.some(Number.isNaN)) {
-            throw new Error("Please enter only numbers separated by commas.");
+        if (values.length === 0) {
+            throw new Error("Please enter at least one number.");
         }
-        return parts;
+
+        if (values.some(Number.isNaN)) {
+            throw new Error("Only numbers separated by commas are allowed.");
+        }
+
+        return values;
     }
 
     async function handleResponse(response) {
@@ -397,8 +431,47 @@
         return data;
     }
 
+    function setPanelsVisible(isLoggedIn) {
+        const trainCard = document.getElementById("trainPredictCard");
+        const predictCard = document.getElementById("predictCard");
+        const panelState = document.getElementById("panelState");
+
+        if (isLoggedIn) {
+            trainCard.classList.remove("hidden");
+            predictCard.classList.remove("hidden");
+            panelState.textContent = "Unlocked";
+        } else {
+            trainCard.classList.add("hidden");
+            predictCard.classList.add("hidden");
+            panelState.textContent = "Locked";
+        }
+    }
+
+    function updateSessionUI() {
+        const token = localStorage.getItem(TOKEN_KEY);
+        const user = localStorage.getItem(USER_KEY);
+
+        document.getElementById("tokenState").textContent = token ? "Yes" : "No";
+        document.getElementById("currentUserLabel").textContent = user || "Not logged in";
+
+        setPanelsVisible(Boolean(token));
+    }
+
+    function getAuthHeaders() {
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (!token) {
+            throw new Error("No JWT token found. Please login first.");
+        }
+
+        return {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        };
+    }
+
     async function login() {
         clearMessage("loginMessage");
+
         try {
             const payload = {
                 user_name: document.getElementById("loginUserName").value.trim(),
@@ -412,37 +485,51 @@
             });
 
             const data = await handleResponse(response);
+
             localStorage.setItem(TOKEN_KEY, data.access_token);
             localStorage.setItem(USER_KEY, payload.user_name);
+
             updateSessionUI();
             showMessage("loginMessage", "success", "Login successful. You can now train and predict.");
         } catch (error) {
+            updateSessionUI();
             showMessage("loginMessage", "error", error.message);
         }
     }
 
     function loadSavedSession() {
         updateSessionUI();
+
         if (localStorage.getItem(TOKEN_KEY)) {
-            showMessage("loginMessage", "info", "Existing token loaded from localStorage.");
+            showMessage("loginMessage", "info", "Saved JWT token loaded from browser storage.");
         } else {
-            showMessage("loginMessage", "error", "No saved token found.");
+            showMessage("loginMessage", "error", "No saved session found.");
         }
     }
 
     function logout() {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
+
         updateSessionUI();
-        showMessage("loginMessage", "info", "You have been logged out locally.");
+
+        document.getElementById("predictionValue").textContent = "--";
+        document.getElementById("predictionDetails").textContent = "No prediction yet.";
+
+        showMessage("loginMessage", "info", "Logged out successfully.");
     }
 
     async function trainModel() {
         clearMessage("trainMessage");
+
         try {
             const x = parseNumbers(document.getElementById("xValues").value);
             const y = parseNumbers(document.getElementById("yValues").value);
             const degree = Number(document.getElementById("degree").value || 3);
+
+            if (x.length !== y.length) {
+                throw new Error("X and Y must have the same number of values.");
+            }
 
             const payload = { x, y, degree };
 
@@ -461,6 +548,7 @@
 
     async function predict() {
         clearMessage("predictMessage");
+
         try {
             const hours = document.getElementById("hours").value.trim();
             if (!hours) {
@@ -480,6 +568,7 @@
             });
 
             const data = await handleResponse(response);
+
             document.getElementById("predictionValue").textContent = data.predicted_running_time;
             document.getElementById("predictionDetails").textContent =
                 `User: ${data.user_name} | Hours: ${data.hours}`;
