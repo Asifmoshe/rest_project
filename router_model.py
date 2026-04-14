@@ -5,18 +5,60 @@ from pydantic import BaseModel, Field
 from auth import get_current_user
 from model import train_and_save_model, predict_from_model
 
+"""
+API routes for model training and prediction.
+
+This router exposes protected endpoints that allow an authenticated user to
+train a personal model and request running-time predictions.
+"""
+
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+
+from auth import get_current_user
+from model import predict_from_model, train_and_save_model
+
 router = APIRouter(tags=["Model"])
 
 MODELS_DIR = Path("models")
 MODELS_DIR.mkdir(exist_ok=True)
 
+
 class TrainRequest(BaseModel):
+    """
+    Request body for model training.
+
+    Attributes:
+        x (list[float]): Feature values used for training.
+        y (list[float]): Target values used for training.
+        degree (int): Polynomial degree for the model.
+    """
+
     x: list[float] = Field(..., min_length=1, description="Feature values")
     y: list[float] = Field(..., min_length=1, description="Target values")
     degree: int = Field(default=3, ge=1, le=10)
 
+
 @router.post("/TRAIN")
 def train_model(data: TrainRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Train and save a personal model for the authenticated user.
+
+    The username is taken from the JWT token, not from the request body. The
+    trained model is saved under the user's name.
+
+    Args:
+        data (TrainRequest): Training payload with X, Y, and degree.
+        current_user (dict): Authenticated user resolved from the JWT token.
+
+    Raises:
+        HTTPException: If X and Y lengths differ or if training fails.
+
+    Returns:
+        dict: Training result summary.
+    """
     if len(data.x) != len(data.y):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -55,8 +97,24 @@ def train_model(data: TrainRequest, current_user: dict = Depends(get_current_use
         "samples": len(data.x),
     }
 
+
 @router.get("/PREDICT/{hours}")
 def predict(hours: float, current_user: dict = Depends(get_current_user)):
+    """
+    Predict running time for the authenticated user's saved model.
+
+    The model file is located according to the username extracted from the JWT.
+
+    Args:
+        hours (float): Number of training hours for prediction.
+        current_user (dict): Authenticated user resolved from the JWT token.
+
+    Raises:
+        HTTPException: If the user's model file does not exist or prediction fails.
+
+    Returns:
+        dict: Prediction result including username, input hours, and predicted value.
+    """
     user_name = current_user["user_name"]
     model_path = MODELS_DIR / f"{user_name}.pkl"
 

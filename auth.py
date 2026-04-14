@@ -10,22 +10,43 @@ import dal_users
 
 # https://www.jwt.io/
 
-# THIS IS BETTER
-import os
-from dotenv import load_dotenv
+"""
+Authentication helpers for the REST ML project.
 
-# Load variables from .env into the environment
+This module is responsible for creating JWT access tokens and validating the
+authenticated user from incoming bearer tokens.
+"""
+
+from datetime import datetime, timedelta, timezone
+import os
+
+import jwt
+from dotenv import load_dotenv
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt.exceptions import InvalidTokenError
+
+import dal_users
+
 load_dotenv()
-# # Access the variables
+
 SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")  # Default to HS256 if not set
-# Convert to int since env variables are always strings
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 
 bearer_scheme = HTTPBearer()
 
 
 def create_access_token(user_name: str) -> str:
+    """
+    Create a signed JWT access token for a user.
+
+    Args:
+        user_name (str): The authenticated user's username.
+
+    Returns:
+        str: Encoded JWT token containing the username and expiration time.
+    """
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": user_name,
@@ -38,6 +59,19 @@ def create_access_token(user_name: str) -> str:
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ):
+    """
+    Validate the JWT token from the Authorization header and return the user.
+
+    Args:
+        credentials (HTTPAuthorizationCredentials): Bearer token credentials.
+
+    Raises:
+        HTTPException: If the token is invalid, expired, malformed, or refers
+            to a user that does not exist.
+
+    Returns:
+        dict: The authenticated user record from the database.
+    """
     token = credentials.credentials
 
     try:
